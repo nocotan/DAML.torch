@@ -4,14 +4,20 @@ import torch.nn.functional as F
 
 
 class Generator(nn.Module):
-    def __init__(self, in_ch=256*3):
+    def __init__(self, in_ch=512*3):
         super(Generator, self).__init__()
-        self.conv1 = nn.Conv2d(3, 1, kernel_size=1, stride=1)
-        self.conv2 = nn.Conv2d(1, 1, kernel_size=1, stride=1)
+        self.dconv1 = nn.ConvTranspose2d(in_ch, 512, kernel_size=2, stride=2)
+        self.dconv2 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
+        self.dconv3 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
+        self.dconv4 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
+        self.dconv5 = nn.ConvTranspose2d(64, 1, kernel_size=2, stride=2)
 
     def forward(self, x):
-        h = F.relu(self.conv1(x))
-        out = F.relu(self.conv2(h))
+        h = F.relu(self.dconv1(x))
+        h = F.relu(self.dconv2(h))
+        h = F.relu(self.dconv3(h))
+        h = F.relu(self.dconv4(h))
+        out = F.relu(self.dconv5(h))
 
         return out
 

@@ -23,24 +23,27 @@ class Updater(object):
 
         dist, emb = self.extractor(x1, x2, x3)
 
-        loss_m = self.update_metrics(dist, alpha)
-        loss_g = self.update_generator(triplet, emb, dist, lmd, alpha)
+        loss_m = self.loss_metrics(dist, alpha)
+        loss_g = self.loss_generator(triplet, emb, dist, lmd, alpha)
+        loss = loss_m + loss_g
+
+        loss.backward()
+        self.e_optim.step()
+        self.g_optim.step()
 
         return loss_m, loss_g
 
-    def update_metrics(self, dist, alpha):
+    def loss_metrics(self, dist, alpha):
         self.e_optim.zero_grad()
 
         dist_a, dist_b = dist
 
         c = dist_a - dist_b + alpha
         loss = torch.clamp(c, min=0).mean()
-        loss.backward()
-        self.e_optim.step()
 
         return loss
 
-    def update_generator(self, x, emb, dist, lmd, alpha):
+    def loss_generator(self, x, emb, dist, lmd, alpha):
         self.g_optim.zero_grad()
 
         x1, x2, x3 = x
@@ -48,15 +51,13 @@ class Updater(object):
         dist_a, dist_b = dist
         lmd1, lmd2 = lmd
 
-        inputs = torch.cat((emb1, emb2, emb3))
+        inputs = torch.cat((emb1, emb2, emb3), dim=1)
         x3_fake = self.generator(inputs)
 
         loss_hard = self.mse(x3_fake, x1)
         loss_reg = self.mse(x3_fake, x3)
         loss_adv = torch.clamp(dist_b - dist_a - alpha, min=0).mean()
 
-        loss = loss_hard + lmd1 * loss_reg + lmd * loss_adv
-        loss.backward()
-        self.g_optim.step()
+        loss = loss_hard + lmd1 * loss_reg + lmd2 * loss_adv
 
         return loss
