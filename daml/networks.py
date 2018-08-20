@@ -55,3 +55,19 @@ class FeatureExtractor(nn.Module):
         dist_b = F.pairwise_distance(h_x, h_z, 2)
 
         return (dist_a, dist_b), (embedded_x, embedded_y, embedded_z)
+
+    def pairwise_distance(self, x, y):
+        batch_size = x.size(0)
+
+        embedded_x = self.extractor(x)
+        embedded_y = self.extractor(y)
+
+        h_x = F.relu(self.fc1_1(embedded_x.view(batch_size, -1)))
+        h_x = F.relu(self.fc1_2(h_x))
+
+        h_y = F.relu(self.fc2_1(embedded_y.view(batch_size, -1)))
+        h_y = F.relu(self.fc2_2(h_y))
+
+        out = F.pairwise_distance(h_x, h_y, 2)
+
+        return out
